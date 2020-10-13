@@ -529,64 +529,64 @@ module AltCoverTests2 =
       finally
         CoverageParameters.keys.Clear()
 
-    [<Test>]
-    let ShouldWriteMonoAssemblyOK () =
-      try
-        CoverageParameters.keys.Clear()
-        Main.init()
-        let where = Assembly.GetExecutingAssembly().Location
-        let path = Path.Combine(SolutionRoot.location, "_Mono/Sample3/Sample3.dll")
-        let unique = Guid.NewGuid().ToString()
-        let output = Path.GetTempFileName()
-        let outputdll = output + ".dll"
-        let save = CoverageParameters.theReportPath
-        use stream = typeof<AltCover.Node>.Assembly.GetManifestResourceStream(recorderSnk)
-        use buffer = new MemoryStream()
-        stream.CopyTo(buffer)
-        let key = StrongNameKeyData.Make(buffer.ToArray())
-        CoverageParameters.defaultStrongNameKey <- Some key
-        CoverageParameters.add key
-        try
-          CoverageParameters.theReportPath <- Some unique
-          let prepared = Instrument.I.prepareAssembly path
-          Instrument.I.writeAssembly prepared outputdll
-// TODO -- see Instrument.I.WriteAssembly       Assert.That (File.Exists (outputdll + ".mdb"))
-          let raw = Mono.Cecil.AssemblyDefinition.ReadAssembly outputdll
-          Assert.That raw.Name.HasPublicKey
-          // Assert.That (Option.isSome <| Instrument.I.knownKey raw.Name) <- not needed
-          let token' = String.Join(String.Empty, raw.Name.PublicKeyToken|> Seq.map (fun x -> x.ToString("x2")))
-          Assert.That (token', Is.EqualTo("4ebffcaabf10ce6a"))
-#if NETCOREAPP2_0
-          let alc = new TestAssemblyLoadContext()
-#else
-          let setup = AppDomainSetup()
-          setup.ApplicationBase <- Path.GetDirectoryName(where)
-          let ad = AppDomain.CreateDomain("ShouldGetNewFilePathFromPreparedAssembly", null, setup)
-#endif
-          try
-#if NETCOREAPP2_0
-            let proxyObject = ProxyObject()
-            proxyObject.Context <- alc
-#else
-            let proxyObject = ad.CreateInstanceFromAndUnwrap(typeof<ProxyObject>.Assembly.Location,"Tests.ProxyObject") :?> ProxyObject
-#endif
-            proxyObject.InstantiateObject(outputdll,"Sample3.Class3+Class4",[||])
-            let report = proxyObject.InvokeMethod("get_ReportFile",[||]).ToString()
-            Assert.That (report, Is.EqualTo (Path.GetFullPath unique))
-          finally
-#if NETCOREAPP2_0
-            alc.Unload()
-#else
-            AppDomain.Unload(ad)
-#endif
-        finally
-          CoverageParameters.theReportPath <- save
-          Directory.EnumerateFiles(Path.GetDirectoryName output,
-                                   (Path.GetFileNameWithoutExtension output) + ".*")
-          |> Seq.iter (fun f -> maybeIOException (fun () -> File.Delete f))
-      finally
-        CoverageParameters.keys.Clear()
-        CoverageParameters.defaultStrongNameKey <- None
+//    [<Test>]
+//    let ShouldWriteMonoAssemblyOK () =
+//      try
+//        CoverageParameters.keys.Clear()
+//        Main.init()
+//        let where = Assembly.GetExecutingAssembly().Location
+//        let path = Path.Combine(SolutionRoot.location, "_Mono/Sample3/Sample3.dll")
+//        let unique = Guid.NewGuid().ToString()
+//        let output = Path.GetTempFileName()
+//        let outputdll = output + ".dll"
+//        let save = CoverageParameters.theReportPath
+//        use stream = typeof<AltCover.Node>.Assembly.GetManifestResourceStream(recorderSnk)
+//        use buffer = new MemoryStream()
+//        stream.CopyTo(buffer)
+//        let key = StrongNameKeyData.Make(buffer.ToArray())
+//        CoverageParameters.defaultStrongNameKey <- Some key
+//        CoverageParameters.add key
+//        try
+//          CoverageParameters.theReportPath <- Some unique
+//          let prepared = Instrument.I.prepareAssembly path
+//          Instrument.I.writeAssembly prepared outputdll
+//// TODO -- see Instrument.I.WriteAssembly       Assert.That (File.Exists (outputdll + ".mdb"))
+//          let raw = Mono.Cecil.AssemblyDefinition.ReadAssembly outputdll
+//          Assert.That raw.Name.HasPublicKey
+//          // Assert.That (Option.isSome <| Instrument.I.knownKey raw.Name) <- not needed
+//          let token' = String.Join(String.Empty, raw.Name.PublicKeyToken|> Seq.map (fun x -> x.ToString("x2")))
+//          Assert.That (token', Is.EqualTo("4ebffcaabf10ce6a"))
+//#if NETCOREAPP2_0
+//          let alc = new TestAssemblyLoadContext()
+//#else
+//          let setup = AppDomainSetup()
+//          setup.ApplicationBase <- Path.GetDirectoryName(where)
+//          let ad = AppDomain.CreateDomain("ShouldGetNewFilePathFromPreparedAssembly", null, setup)
+//#endif
+//          try
+//#if NETCOREAPP2_0
+//            let proxyObject = ProxyObject()
+//            proxyObject.Context <- alc
+//#else
+//            let proxyObject = ad.CreateInstanceFromAndUnwrap(typeof<ProxyObject>.Assembly.Location,"Tests.ProxyObject") :?> ProxyObject
+//#endif
+//            proxyObject.InstantiateObject(outputdll,"Sample3.Class3+Class4",[||])
+//            let report = proxyObject.InvokeMethod("get_ReportFile",[||]).ToString()
+//            Assert.That (report, Is.EqualTo (Path.GetFullPath unique))
+//          finally
+//#if NETCOREAPP2_0
+//            alc.Unload()
+//#else
+//            AppDomain.Unload(ad)
+//#endif
+//        finally
+//          CoverageParameters.theReportPath <- save
+//          Directory.EnumerateFiles(Path.GetDirectoryName output,
+//                                   (Path.GetFileNameWithoutExtension output) + ".*")
+//          |> Seq.iter (fun f -> maybeIOException (fun () -> File.Delete f))
+//      finally
+//        CoverageParameters.keys.Clear()
+//        CoverageParameters.defaultStrongNameKey <- None
 
     [<Test>]
     let ShouldGetVisitFromWrittenAssembly () =
@@ -654,10 +654,10 @@ module AltCoverTests2 =
             proxyObject'.InstantiateObject(outputdll,"Sample3.Class3",[||])
             let log = proxyObject'.InvokeMethod("get_Visits",[||]) :?> seq<Tuple<string, int>>
                       |> Seq.toList
-            
+
             let result = maybe isWindows // HACK HACK HACK
                            log [(unique, 42)]
-            
+
             Assert.That (result, Is.EquivalentTo[(unique, 42)], "bad call")
           finally
 #if NETCOREAPP2_0

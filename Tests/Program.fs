@@ -261,7 +261,7 @@ module ExpectoMain =
           Tests.AltCoverTests2.ShouldGetTrackingStyleIfSet, "Tests2.ShouldGetTrackingStyleIfSet"
           Tests.AltCoverTests2.ShouldSymbolWriterAsExpected, "Tests2.ShouldSymbolWriterAsExpected"
           Tests.AltCoverTests2.ShouldGetNewFilePathFromPreparedAssembly, "Tests2.ShouldGetNewFilePathFromPreparedAssembly"
-          Tests.AltCoverTests2.ShouldWriteMonoAssemblyOK, "Tests2.ShouldWriteMonoAssemblyOK"
+          //Tests.AltCoverTests2.ShouldWriteMonoAssemblyOK, "Tests2.ShouldWriteMonoAssemblyOK"
           Tests.AltCoverTests2.ShouldGetVisitFromWrittenAssembly, "Tests2.ShouldGetVisitFromWrittenAssembly"
           //Tests.AltCoverTests2.ShouldUpdateHandlerOK([<Range(0, 31)>] selection)
           Tests.AltCoverTests2.ShouldSubstituteInstructionOperand, "Tests2.ShouldSubstituteInstructionOperand"
