@@ -845,30 +845,46 @@ module internal Visitor =
       else
         lastOfSequencePoint dbg n
 
+    let rec internal currentSequencePoint  (dbg : MethodDebugInformation) (i : Instruction) =
+      let sp = i |> dbg.GetSequencePoint
+      if sp |> isNull
+      then
+        i.Previous |> Option.ofObj |> Option.bind (currentSequencePoint dbg)
+      else
+        Some sp
+
+    let isRealSp (optsp : SequencePoint option) =
+      match optsp with
+      | None -> false
+      | Some sp -> sp.IsHidden |> not
+
     let internal getJumps (dbg : MethodDebugInformation) (i : Instruction) =
       let terminal = lastOfSequencePoint dbg i
-      let next = i.Next
-      if i.OpCode = OpCodes.Switch then
-        (i, getJumpChain terminal next, next.Offset, -1) :: (i.Operand :?> Instruction []
-                                                             |> Seq.mapi
-                                                                  (fun k d ->
-                                                                    i,
-                                                                    getJumpChain terminal d,
-                                                                    d.Offset, k)
-                                                             |> Seq.toList)
-      else
-        let jump = i.Operand :?> Instruction
-        let toNext = getJumpChain terminal next
-        let toJump = getJumpChain terminal jump
-        // Eliminate the "all inside one SeqPnt" jumps
-        // This covers a multitude of compiler generated branching cases
-        // TODO can we simplify
-        match (!CoverageParameters.coalesceBranches, includedSequencePoint dbg toNext toJump) with
-        | (true, _)
-        | (_, Some _) ->
-            [ (i, toNext, next.Offset, -1)
-              (i, toJump, jump.Offset, 0) ]
-        | _ -> []
+      // skip branches starting in source-less sequence points
+      if (currentSequencePoint dbg i) |> isRealSp then
+        let next = i.Next
+        if i.OpCode = OpCodes.Switch then
+          (i, getJumpChain terminal next, next.Offset, -1) :: (i.Operand :?> Instruction []
+                                                               |> Seq.mapi
+                                                                    (fun k d ->
+                                                                      i,
+                                                                      getJumpChain terminal d,
+                                                                      d.Offset, k)
+                                                               |> Seq.toList)
+        else
+          let jump = i.Operand :?> Instruction
+          let toNext = getJumpChain terminal next
+          let toJump = getJumpChain terminal jump
+          // Eliminate the "all inside one SeqPnt" jumps
+          // This covers a multitude of compiler generated branching cases
+          // TODO can we simplify
+          match (!CoverageParameters.coalesceBranches, includedSequencePoint dbg toNext toJump) with
+          | (true, _)
+          | (_, Some _) ->
+              [ (i, toNext, next.Offset, -1)
+                (i, toJump, jump.Offset, 0) ]
+          | _ -> []
+      else []
 
     // cribbed from OpenCover's CecilSymbolManager -- internals of C# yield return iterators
     let private isMoveNext =
